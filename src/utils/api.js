@@ -1,7 +1,7 @@
 // API utility functions for the music app
 
 // Base API URL - adjust this based on your backend URL
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://music-app-backend.cloud/api';
 
 // Generic API call function
 const apiCall = async (endpoint, options = {}) => {

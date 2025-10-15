@@ -126,7 +126,7 @@ const TrackDetailPage = () => {
 			return coverImageFilename; // Already a full URL
 		}
 		// Construct the full URL for the image
-		return `http://localhost:5000/uploads/${coverImageFilename}`;
+		return `https://music-app-backend.cloud/uploads/${coverImageFilename}`;
 	};
 
 	// Helper function to get audio file URL
@@ -137,7 +137,7 @@ const TrackDetailPage = () => {
 			return audioFilename; // Already a full URL
 		}
 		// Construct the full URL for the audio
-		return `http://localhost:5000/uploads/${audioFilename}`;
+		return `https://music-app-backend.cloud/uploads/${audioFilename}`;
 	};
 
 	// Handle play/pause button click
@@ -623,6 +623,21 @@ const TrackDetailPage = () => {
 												}}>
 												{track.type === "Album" ? "Album Release" : "Single Audio Official"}
 											</Typography>
+											{/* Add Release Date to Song Credits */}
+											<Typography
+												variant='body1'
+												sx={{
+													mt: 1,
+													fontWeight: 500,
+													fontSize: { xs: "0.875rem", sm: "1rem" },
+													"&:before": {
+														content: `"Release Date : "`,
+														fontWeight: 700,
+														color: "primary.main",
+													},
+												}}>
+												{new Date(track.publishDate).toLocaleDateString('en-GB')}
+											</Typography>
 										</Box>
 									) : (
 										<Typography 
@@ -814,9 +829,9 @@ const TrackDetailPage = () => {
 								</TableContainer>
 
 								{/* Info sections */}
-								<Grid container spacing={4}>
+								<Grid container spacing={4} >
 									{/* Technical Information */}
-									<Grid item xs={12} md={6}>
+									<Grid item xs={12} md={6} sx={{ xs: { flex: 0 }, sm: { flex: 0 }, md: { flex: 1} }}>
 										<Paper sx={{ p: 3, height: "100%", borderRadius: 2 }}>
 											<Typography
 												variant='h6'
@@ -915,7 +930,11 @@ const TrackDetailPage = () => {
 														Plays:
 													</Typography>
 													<Typography variant='body2' sx={{ fontWeight: 600 }}>
-														{track.listenCount?.toLocaleString() || 0}
+														{track.listenCount >= 1000000 
+															? `${(track.listenCount / 1000000).toFixed(1)}M` 
+															: track.listenCount >= 1000 
+																? `${(track.listenCount / 1000).toFixed(1)}K` 
+																: track.listenCount}
 													</Typography>
 												</Box>
 											</Stack>
@@ -923,7 +942,7 @@ const TrackDetailPage = () => {
 									</Grid>
 
 									{/* Release Information */}
-									<Grid item xs={12} md={6}>
+									<Grid item xs={12} md={6} sx={{ xs: { flex: 0 }, sm: { flex: 0 }, md: { flex: 1} }}>
 										<Paper sx={{ p: 3, height: "100%", borderRadius: 2 }}>
 											<Typography
 												variant='h6'
@@ -944,7 +963,7 @@ const TrackDetailPage = () => {
 														Release Date:
 													</Typography>
 													<Typography variant='body2' sx={{ fontWeight: 600 }}>
-														{new Date(track.createdAt).toLocaleDateString()}
+														{new Date(track.publishDate).toLocaleDateString('en-GB')}
 													</Typography>
 												</Box>
 												<Box
@@ -981,7 +1000,7 @@ const TrackDetailPage = () => {
 														{track.genre}
 													</Typography>
 												</Box>
-												<Box
+												{/* <Box
 													sx={{
 														display: "flex",
 														justifyContent: "space-between",
@@ -994,7 +1013,7 @@ const TrackDetailPage = () => {
 														sx={{ fontWeight: 600, fontFamily: "monospace" }}>
 														{track._id?.substring(0, 8)}...
 													</Typography>
-												</Box>
+												</Box> */}
 											</Stack>
 										</Paper>
 									</Grid>

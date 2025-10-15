@@ -34,7 +34,7 @@ const AudioPlayer = ({ track, isPlaying, setIsPlaying }) => {
       return audioFilename; // Already a full URL
     }
     // Construct the full URL for the audio
-    return `http://localhost:5000/uploads/${audioFilename}`;
+    return `https://music-app-backend.cloud/uploads/${audioFilename}`;
   };
 
   // Format time from seconds to MM:SS
@@ -173,7 +173,7 @@ const AudioPlayer = ({ track, isPlaying, setIsPlaying }) => {
           <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 200 }}>
             <Box
               component="img"
-              src={track.coverImage ? `http://localhost:5000/uploads/${track.coverImage}` : '/placeholder-image.svg'}
+              src={track.coverImage ? `https://music-app-backend.cloud/uploads/${track.coverImage}` : '/placeholder-image.svg'}
               alt={track.title}
               sx={{ 
                 width: 50, 

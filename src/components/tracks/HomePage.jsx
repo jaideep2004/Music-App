@@ -90,7 +90,7 @@ const HomePage = () => {
       }
       
       // Fetch tracks with parameters
-      const response = await fetch(`http://localhost:5000/api/tracks?${params.toString()}`);
+      const response = await fetch(`https://music-app-backend.cloud/api/tracks?${params.toString()}`);
       const data = await response.json();
       
       if (!response.ok) {
@@ -158,7 +158,10 @@ const HomePage = () => {
 
   return (
     <Box sx={{ backgroundColor: 'background.default', pb: 6 }}>
-      <Container maxWidth="xl" sx={{ pt: { xs: 2, sm: 4 } }}>
+      <Container maxWidth="xl" sx={{ 
+        pt: { xs: 2, sm: 4 }, 
+        px: { xs: 0, sm: 2 }
+      }}>
        
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -224,23 +227,26 @@ const HomePage = () => {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3, delay: 0.2 }}
           >
-            <Grid 
-              container 
-              spacing={{ xs: 2, sm: 2, md: 3 }} 
-              justifyContent="center"
-              sx={{ px: { xs: 1, sm: 0 } }}
-            >
+            <Box sx={{ 
+              display: 'grid',
+              gridTemplateColumns: { 
+                xs: '1fr',
+                sm: 'repeat(2, 1fr)',
+                md: 'repeat(3, 1fr)',
+                lg: 'repeat(5, 1fr)',
+                xl: 'repeat(5, 1fr)'
+              },
+              gap: { xs: 0, sm: 1, md: 1 },
+              px: { xs: 3, sm: 0 }
+            }}>
               {tracks.map((track, index) => (
-                <Grid 
-                  item 
-                  xs={12} 
-                  sm={6} 
-                  md={4} 
-                  lg={3} 
+                <Box 
                   key={track._id}
                   sx={{ 
                     display: 'flex',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    px: { xs: 1, sm: 1, md: 1.5 },
+                    pb: { xs: 2, sm: 0 }
                   }}
                 >
                   <motion.div
@@ -251,13 +257,13 @@ const HomePage = () => {
                       delay: index * 0.05,
                       ease: 'easeOut'
                     }}
-                    style={{ width: '100%', maxWidth: 280 }}
+                    style={{ width: '100%' }}
                   >
                     <TrackCard track={track} />
                   </motion.div>
-                </Grid>
+                </Box>
               ))}
-            </Grid>
+            </Box>
 
             {/* Loading indicator for more content */}
             {loading && tracks.length > 0 && (

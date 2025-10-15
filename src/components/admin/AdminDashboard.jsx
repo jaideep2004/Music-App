@@ -50,6 +50,7 @@ const AdminDashboard = () => {
 		genre: "",
 		contributors: [{ name: "", role: "Artist" }],
 		listenCount: 0,
+		publishDate: new Date().toISOString().split('T')[0], // Add publish date field
 	});
 
 	// Form state for new album
@@ -65,6 +66,7 @@ const AdminDashboard = () => {
 			},
 		],
 		listenCount: 0,
+		publishDate: new Date().toISOString().split('T')[0], // Add publish date field
 	});
 
 	// Form state for editing track
@@ -74,6 +76,7 @@ const AdminDashboard = () => {
 		genre: "",
 		contributors: [{ name: "", role: "Artist" }],
 		listenCount: 0,
+		publishDate: new Date().toISOString().split('T')[0], // Add publish date field
 	});
 
 	// File upload state
@@ -101,7 +104,7 @@ const AdminDashboard = () => {
 		// Extract the filename from the full path
 		// The path might be something like "uploads\coverImage-123456789.jpg"
 		const filename = coverImagePath.split("\\").pop().split("/").pop();
-		return `http://localhost:5000/uploads/${filename}`;
+		return `https://music-app-backend.cloud/uploads/${filename}`;
 	};
 
 	// Helper function to format duration
@@ -145,6 +148,7 @@ const AdminDashboard = () => {
 					{ name: "", role: "Artist" },
 				],
 				listenCount: editingTrack.listenCount || 0,
+				publishDate: editingTrack.publishDate ? new Date(editingTrack.publishDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0], // Add publish date
 			});
 		}
 	}, [editingTrack]);
@@ -428,6 +432,42 @@ const AdminDashboard = () => {
 						};
 					});
 					setAlbumTrackPreviews(previews);
+					
+					// Automatically populate track titles based on file names
+					const updatedTracks = [...newAlbum.tracks];
+					fileArray.forEach((file, index) => {
+						if (updatedTracks[index]) {
+							// Extract title from filename (remove extension)
+							const title = file.name.replace(/\.[^/.]+$/, "");
+							updatedTracks[index] = {
+								...updatedTracks[index],
+								title: title
+							};
+						} else {
+							// If track doesn't exist, create a new one
+							const title = file.name.replace(/\.[^/.]+$/, "");
+							updatedTracks[index] = {
+								title: title,
+								trackNumber: index + 1,
+								contributors: [{ name: "", role: "Artist" }],
+							};
+						}
+					});
+					// If we have more tracks in state than files, trim the excess
+					const trimmedTracks = updatedTracks.slice(0, fileArray.length);
+					// If we have fewer tracks in state than files, add the missing ones
+					for (let i = updatedTracks.length; i < fileArray.length; i++) {
+						const title = fileArray[i].name.replace(/\.[^/.]+$/, "");
+						trimmedTracks.push({
+							title: title,
+							trackNumber: i + 1,
+							contributors: [{ name: "", role: "Artist" }],
+						});
+					}
+					setNewAlbum({
+						...newAlbum,
+						tracks: trimmedTracks
+					});
 				}
 			} else {
 				if (fileType === "cover") {
@@ -448,6 +488,13 @@ const AdminDashboard = () => {
 						size: file.size,
 						type: file.type,
 						lastModified: file.lastModified,
+					});
+					
+					// Automatically populate track title based on file name
+					const title = file.name.replace(/\.[^/.]+$/, "");
+					setNewTrack({
+						...newTrack,
+						title: title
 					});
 				}
 			}
@@ -505,7 +552,7 @@ const AdminDashboard = () => {
 
 			// Add other optional fields
 			formData.append("listenCount", newTrack.listenCount.toString());
-			formData.append("publishDate", new Date().toISOString());
+			formData.append("publishDate", newTrack.publishDate); // Use custom publish date
 
 			await trackAPI.create(formData, token);
 
@@ -518,6 +565,7 @@ const AdminDashboard = () => {
 				type: "Single",
 				genre: "",
 				contributors: [{ name: "", role: "Artist" }],
+				publishDate: new Date().toISOString().split('T')[0], // Reset to today's date
 			});
 			setCoverImage(null);
 			setAudioFile(null);
@@ -592,7 +640,7 @@ const AdminDashboard = () => {
 			albumFormData.append("contributors", JSON.stringify(newAlbum.contributors));
 			albumFormData.append("coverImage", albumCoverImage);
 			albumFormData.append("listenCount", newAlbum.listenCount.toString());
-			albumFormData.append("publishDate", new Date().toISOString());
+			albumFormData.append("publishDate", newAlbum.publishDate); // Use custom publish date
 
 			const albumResponse = await trackAPI.create(albumFormData, token);
 			const albumId = albumResponse._id;
@@ -612,7 +660,7 @@ const AdminDashboard = () => {
 				trackFormData.append("album", albumId);
 				trackFormData.append("trackNumber", track.trackNumber);
 				trackFormData.append("listenCount", newAlbum.listenCount.toString()); // Use album's play count for tracks
-				trackFormData.append("publishDate", new Date().toISOString());
+				trackFormData.append("publishDate", newAlbum.publishDate); // Use album's publish date for tracks
 
 				// For tracks in an album, we use the album cover image
 				trackFormData.append("coverImage", albumCoverImage);
@@ -635,6 +683,7 @@ const AdminDashboard = () => {
 						contributors: [{ name: "", role: "Artist" }],
 					},
 				],
+				publishDate: new Date().toISOString().split('T')[0], // Reset to today's date
 			});
 			setAlbumCoverImage(null);
 			setAlbumTracks([]);
@@ -686,6 +735,7 @@ const AdminDashboard = () => {
 				genre: editTrack.genre,
 				contributors: editTrack.contributors,
 				listenCount: editTrack.listenCount,
+				publishDate: editTrack.publishDate, // Add publish date
 			};
 
 			// If new files are uploaded, include them
@@ -934,6 +984,51 @@ const AdminDashboard = () => {
 										InputProps={{ inputProps: { min: 0 } }}
 									/>
 
+									<TextField
+										fullWidth
+										label='Release Date'
+										name='publishDate'
+										type='date'
+										value={newTrack.publishDate}
+										onChange={handleInputChange}
+										margin='normal'
+										variant='outlined'
+										InputLabelProps={{ shrink: true }}
+									/>
+
+									{/* Sticky Apply to All Button for Single Track */}
+									<Box
+										sx={{
+											position: "sticky",
+											top: 50,
+											zIndex: 100,
+											backgroundColor: "background.paper",
+											padding: 2,
+											borderRadius: 2,
+											boxShadow: 3,
+											mb: 3,
+										}}>
+										<Typography variant="h6" gutterBottom sx={{ fontWeight: "bold", color: "#f68712" }}>
+											Quick Actions
+										</Typography>
+										<Stack direction="row" spacing={2} flexWrap="wrap" gap={1}>
+											<Button
+												onClick={() => {
+													// Apply genre to title if both are empty
+													if (!newTrack.title && newTrack.genre) {
+														setNewTrack({
+															...newTrack,
+															title: newTrack.genre
+														});
+													}
+												}}
+												variant='outlined'
+												size='small'>
+												Use Genre as Title
+											</Button>
+										</Stack>
+									</Box>
+
 									<Typography
 										variant='h6'
 										gutterBottom
@@ -1161,7 +1256,61 @@ const AdminDashboard = () => {
 									}}>
 									Upload New Album
 								</Typography>
+<Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+										<Button
+											component='label'
+											variant='outlined'
+											startIcon={<UploadFile />}
+											sx={{
+												borderColor: "#f68712",
+												color: "#f68712",
+												"&:hover": {
+													borderColor: "#d1730f",
+													backgroundColor: "rgba(246, 135, 18, 0.04)",
+												},
+											}}>
+											Upload Track Audio Files
+											<input
+												type='file'
+												hidden
+												accept='audio/mpeg,audio/flac,audio/wav,audio/aac'
+												onChange={(e) => handleFileChange(e, "tracks", true)}
+												multiple
+											/>
+										</Button>
+										{albumTracks.length > 0 && (
+											<Typography variant='body2' sx={{ alignSelf: "center" }}>
+												{albumTracks.length} file(s) selected
+											</Typography>
+										)}
+									</Box>
 
+									{/* Album Track Previews */}
+									{albumTrackPreviews.length > 0 && (
+										<Box sx={{ mb: 2 }}>
+											<Typography variant='subtitle2' sx={{ mb: 1 }}>
+												Track Files Preview:
+											</Typography>
+											{albumTrackPreviews.map((preview, index) => (
+												<Paper key={index} sx={{ p: 2, mb: 1, bgcolor: "grey.100" }}>
+													<Typography variant='body2'>
+														<strong>Track {index + 1}:</strong> {preview.name}
+													</Typography>
+													<Typography variant='body2'>
+														<strong>Size:</strong>{" "}
+														{(preview.size / (1024 * 1024)).toFixed(2)} MB
+													</Typography>
+													<Typography variant='body2'>
+														<strong>Type:</strong> {preview.type}
+													</Typography>
+													<Typography variant='body2'>
+														<strong>Last Modified:</strong>{" "}
+														{new Date(preview.lastModified).toLocaleString()}
+													</Typography>
+												</Paper>
+											))}
+										</Box>
+									)}
 								<Box
 									component='form'
 									onSubmit={handleAlbumSubmit}
@@ -1198,6 +1347,18 @@ const AdminDashboard = () => {
 										margin='normal'
 										variant='outlined'
 										InputProps={{ inputProps: { min: 0 } }}
+									/>
+
+									<TextField
+										fullWidth
+										label='Release Date'
+										name='publishDate'
+										type='date'
+										value={newAlbum.publishDate}
+										onChange={(e) => handleInputChange(e, false, true)}
+										margin='normal'
+										variant='outlined'
+										InputLabelProps={{ shrink: true }}
 									/>
 
 									<Typography
@@ -1279,16 +1440,53 @@ const AdminDashboard = () => {
 										Add Contributor
 									</Button>
 
-									{/* Apply to All Button */}
-									{newAlbum.contributors.length > 0 && (
-										<Button
-											onClick={applyContributorsToAllTracks}
-											variant='contained'
-											size='small'
-											sx={{ mb: 2, ml: 2 }}>
-											Apply to All Tracks
-										</Button>
-									)}
+									{/* Sticky Apply to All Buttons Container */}
+									<Box
+										sx={{
+											position: "sticky",
+											top: 50,
+											zIndex: 100,
+											backgroundColor: "background.paper",
+											padding: 2,
+											borderRadius: 2,
+											boxShadow: 3,
+											mb: 3,
+										}}>
+										<Typography variant="h6" gutterBottom sx={{ fontWeight: "bold", color: "#f68712" }}>
+											Quick Actions
+										</Typography>
+										<Stack direction="row" spacing={2} flexWrap="wrap" gap={1}>
+											{/* Apply to All Button */}
+											{newAlbum.contributors.length > 0 && (
+												<Button
+													onClick={applyContributorsToAllTracks}
+													variant='contained'
+													size='small'>
+													Apply Contributors to All Tracks
+												</Button>
+											)}
+											
+											{/* Apply album title to all tracks button */}
+											{newAlbum.title && (
+												<Button
+													onClick={applyAlbumTitleToAllTracks}
+													variant='outlined'
+													size='small'>
+													Apply Album Title to All Tracks
+												</Button>
+											)}
+											
+											{/* Apply genre to all tracks button */}
+											{newAlbum.genre && (
+												<Button
+													onClick={applyGenreToAllTracks}
+													variant='outlined'
+													size='small'>
+													Apply Genre to All Tracks
+												</Button>
+											)}
+										</Stack>
+									</Box>
 
 									<Typography
 										variant='h6'
@@ -1300,17 +1498,6 @@ const AdminDashboard = () => {
 										}}>
 										Tracks
 									</Typography>
-
-									{/* Apply album title to all tracks button */}
-									{newAlbum.title && (
-										<Button
-											onClick={applyAlbumTitleToAllTracks}
-											variant='outlined'
-											size='small'
-											sx={{ mb: 2 }}>
-											Apply Album Title to All Tracks
-										</Button>
-									)}
 
 									{newAlbum.tracks.map((track, trackIndex) => (
 										<Paper
@@ -1527,61 +1714,7 @@ const AdminDashboard = () => {
 										</Box>
 									)}
 
-									<Box sx={{ display: "flex", gap: 2, mb: 2 }}>
-										<Button
-											component='label'
-											variant='outlined'
-											startIcon={<UploadFile />}
-											sx={{
-												borderColor: "#f68712",
-												color: "#f68712",
-												"&:hover": {
-													borderColor: "#d1730f",
-													backgroundColor: "rgba(246, 135, 18, 0.04)",
-												},
-											}}>
-											Upload Track Audio Files
-											<input
-												type='file'
-												hidden
-												accept='audio/mpeg,audio/flac,audio/wav,audio/aac'
-												onChange={(e) => handleFileChange(e, "tracks", true)}
-												multiple
-											/>
-										</Button>
-										{albumTracks.length > 0 && (
-											<Typography variant='body2' sx={{ alignSelf: "center" }}>
-												{albumTracks.length} file(s) selected
-											</Typography>
-										)}
-									</Box>
-
-									{/* Album Track Previews */}
-									{albumTrackPreviews.length > 0 && (
-										<Box sx={{ mb: 2 }}>
-											<Typography variant='subtitle2' sx={{ mb: 1 }}>
-												Track Files Preview:
-											</Typography>
-											{albumTrackPreviews.map((preview, index) => (
-												<Paper key={index} sx={{ p: 2, mb: 1, bgcolor: "grey.100" }}>
-													<Typography variant='body2'>
-														<strong>Track {index + 1}:</strong> {preview.name}
-													</Typography>
-													<Typography variant='body2'>
-														<strong>Size:</strong>{" "}
-														{(preview.size / (1024 * 1024)).toFixed(2)} MB
-													</Typography>
-													<Typography variant='body2'>
-														<strong>Type:</strong> {preview.type}
-													</Typography>
-													<Typography variant='body2'>
-														<strong>Last Modified:</strong>{" "}
-														{new Date(preview.lastModified).toLocaleString()}
-													</Typography>
-												</Paper>
-											))}
-										</Box>
-									)}
+									
 
 									<Box
 										sx={{ display: "flex", justifyContent: "flex-end", mt: 3 }}>
@@ -1997,6 +2130,18 @@ const AdminDashboard = () => {
 								margin='normal'
 								variant='outlined'
 								InputProps={{ inputProps: { min: 0 } }}
+							/>
+
+							<TextField
+								fullWidth
+								label='Release Date'
+								name='publishDate'
+								type='date'
+								value={editTrack.publishDate}
+								onChange={(e) => handleInputChange(e, true)}
+								margin='normal'
+								variant='outlined'
+								InputLabelProps={{ shrink: true }}
 							/>
 
 							<Typography

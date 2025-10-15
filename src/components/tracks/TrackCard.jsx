@@ -68,7 +68,7 @@ const TrackCard = ({ track }) => {
       return coverImageFilename; // Already a full URL
     }
     // Construct the full URL for the image
-    return `http://localhost:5000/uploads/${coverImageFilename}`;
+    return `https://music-app-backend.cloud/uploads/${coverImageFilename}`;
   };
 
   // Format duration from seconds to MM:SS
@@ -105,8 +105,8 @@ const TrackCard = ({ track }) => {
           position: 'relative',
           overflow: 'hidden',
           backgroundColor: 'background.card',
-          minWidth: 280,
-          maxWidth: 280,
+          width: '100%',
+          maxWidth: '100%',
           maxHeight: 360,
         }}
       >
@@ -123,7 +123,9 @@ const TrackCard = ({ track }) => {
               transition: 'transform 0.3s ease',
               '&:hover': {
                 transform: 'scale(1.05)'
-              }
+              },
+              width: '100%',
+              maxHeight: { xs: 200, sm: 180 }
             }}
             onError={(e) => {
               e.target.src = '/placeholder-image.svg';
@@ -256,7 +258,22 @@ const TrackCard = ({ track }) => {
             )}
           </Stack>
           
-         
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+            }}>
+            <Typography variant='body2' color='text.secondary'>
+              Plays:
+            </Typography>
+            <Typography variant='body2' sx={{ fontWeight: 600 }}>
+              {track.listenCount >= 1000000 
+                ? `${(track.listenCount / 1000000).toFixed(1)}M` 
+                : track.listenCount >= 1000 
+                  ? `${(track.listenCount / 1000).toFixed(1)}K` 
+                  : track.listenCount}
+            </Typography>
+          </Box>
           
           {/* Additional info on hover */}
           <Collapse in={isHovered} timeout="auto" unmountOnExit>
@@ -264,8 +281,8 @@ const TrackCard = ({ track }) => {
               <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.7rem' }}>
                 <Info fontSize="small" sx={{ fontSize: '0.8rem' }} />
                 {track.type === 'Single' 
-                  ? `Published: ${new Date(track.publishDate).toLocaleDateString()}`
-                  : `${track.contributors?.length || 0} contributors${track.trackCount ? `, ${track.trackCount} tracks` : ''}`
+                  ? `Published: ${new Date(track.publishDate).toLocaleDateString('en-GB')}`
+                  : `Published: ${new Date(track.publishDate).toLocaleDateString('en-GB')} • ${track.contributors?.length || 0} contributors${track.trackCount ? `, ${track.trackCount} tracks` : ''}`
                 }
               </Typography>
             </Box>
