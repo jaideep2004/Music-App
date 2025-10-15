@@ -1,0 +1,88 @@
+/* Track card styles */
+.track-card {
+	transition: transform 0.3s ease-in-out;
+}
+
+.track-card:hover {
+	transform: translateY(-5px);
+}
+
+/* Audio player styles */
+.audio-player {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	z-index: 1000;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+	.track-card {
+		margin-bottom: 16px;
+	}
+
+	.audio-player .controls {
+		flex-direction: column;
+		align-items: center;
+	}
+
+	.audio-player .track-info {
+		margin-bottom: 10px;
+		text-align: center;
+	}
+}
+
+/* Animation styles */
+.fade-in {
+	animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+	width: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: #1e1e1e;
+}
+
+::-webkit-scrollbar-thumb {
+	background: #f68712;
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: #d1730f;
+}
+
+body {
+	padding: 0;
+	margin: 0;
+	overflow-x: hidden;
+	box-sizing: border-box;
+}
+
+html {
+	padding: 0;
+	margin: 0;
+	overflow-x: hidden;
+	box-sizing: border-box;
+}
+
+/* Mobile menu drawer styles */
+.mobile-menu-drawer .MuiDrawer-paper {
+	width: 100vw;
+	max-width: 300px;
+	height: 100vh;
+	transform: translateX(0) !important;
+}
