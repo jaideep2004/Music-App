@@ -26,6 +26,7 @@ import {
 	Grid,
 	Divider,
 	Stack,
+	LinearProgress,
 } from "@mui/material";
 import { useSnackbar } from 'notistack';
 import { Add, Delete, Edit, UploadFile, Image, Album as AlbumIcon, AccessTime, PlayArrow, Pause } from "@mui/icons-material";
@@ -42,6 +43,8 @@ const AdminDashboard = () => {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState("");
+	const [uploadProgress, setUploadProgress] = useState(0); // New state for upload progress
+	const [isUploading, setIsUploading] = useState(false); // New state for upload status
 
 	// Form state for new track/single
 	const [newTrack, setNewTrack] = useState({
@@ -536,7 +539,8 @@ const AdminDashboard = () => {
 			return;
 		}
 
-		setLoading(true);
+		setIsUploading(true);
+		setUploadProgress(0);
 		setError("");
 		setSuccess("");
 
@@ -554,7 +558,9 @@ const AdminDashboard = () => {
 			formData.append("listenCount", newTrack.listenCount.toString());
 			formData.append("publishDate", newTrack.publishDate); // Use custom publish date
 
-			await trackAPI.create(formData, token);
+			await trackAPI.create(formData, token, (progress) => {
+				setUploadProgress(progress);
+			});
 
 			setSuccess("Track uploaded successfully!");
 			enqueueSnackbar("Track uploaded successfully!", { variant: "success" });
@@ -579,7 +585,8 @@ const AdminDashboard = () => {
 			setError(errorMessage);
 			enqueueSnackbar(errorMessage, { variant: "error" });
 		} finally {
-			setLoading(false);
+			setIsUploading(false);
+			setUploadProgress(0);
 		}
 	};
 
@@ -627,7 +634,8 @@ const AdminDashboard = () => {
 			}
 		}
 
-		setLoading(true);
+		setIsUploading(true);
+		setUploadProgress(0);
 		setError("");
 		setSuccess("");
 
@@ -642,7 +650,10 @@ const AdminDashboard = () => {
 			albumFormData.append("listenCount", newAlbum.listenCount.toString());
 			albumFormData.append("publishDate", newAlbum.publishDate); // Use custom publish date
 
-			const albumResponse = await trackAPI.create(albumFormData, token);
+			const albumResponse = await trackAPI.create(albumFormData, token, (progress) => {
+				// For album creation, we'll show progress for the first part
+				setUploadProgress(progress / 2);
+			});
 			const albumId = albumResponse._id;
 
 			// Then, create each track in the album
@@ -665,7 +676,11 @@ const AdminDashboard = () => {
 				// For tracks in an album, we use the album cover image
 				trackFormData.append("coverImage", albumCoverImage);
 
-				await trackAPI.create(trackFormData, token);
+				// Calculate progress for each track upload
+				const trackProgress = (i + 1) / newAlbum.tracks.length * 50 + 50;
+				await trackAPI.create(trackFormData, token, (progress) => {
+					setUploadProgress(trackProgress - (50 - progress / 2));
+				});
 			}
 
 			setSuccess("Album uploaded successfully!");
@@ -697,7 +712,8 @@ const AdminDashboard = () => {
 			setError(errorMessage);
 			enqueueSnackbar(errorMessage, { variant: "error" });
 		} finally {
-			setLoading(false);
+			setIsUploading(false);
+			setUploadProgress(0);
 		}
 	};
 
@@ -878,6 +894,16 @@ const AdminDashboard = () => {
 					<Alert severity='success' sx={{ mb: 2 }}>
 						{success}
 					</Alert>
+				)}
+
+				{/* Progress Bar for Uploads */}
+				{isUploading && (
+					<Box sx={{ mb: 2 }}>
+						<Typography variant="body1" gutterBottom>
+							Uploading... {Math.round(uploadProgress)}%
+						</Typography>
+						<LinearProgress variant="determinate" value={uploadProgress} />
+					</Box>
 				)}
 
 				<Paper
@@ -1225,7 +1251,7 @@ const AdminDashboard = () => {
 											type='submit'
 											variant='contained'
 											size='large'
-											disabled={loading}
+											disabled={loading || isUploading}
 											sx={{
 												background:
 													"linear-gradient(45deg, #f68712 30%, #fb5e8c 90%)",
@@ -1235,8 +1261,11 @@ const AdminDashboard = () => {
 														"linear-gradient(45deg, #d1730f 30%, #00a650 90%)",
 												},
 											}}>
-											{loading ? (
-												<CircularProgress size={24} />
+											{isUploading ? (
+												<>
+													<CircularProgress size={24} sx={{ mr: 1 }} />
+													Uploading...
+												</>
 											) : (
 												"Upload Track"
 											)}
@@ -1722,7 +1751,7 @@ const AdminDashboard = () => {
 											type='submit'
 											variant='contained'
 											size='large'
-											disabled={loading}
+											disabled={loading || isUploading}
 											sx={{
 												background:
 													"linear-gradient(45deg, #f68712 30%, #fb5e8c 90%)",
@@ -1732,8 +1761,11 @@ const AdminDashboard = () => {
 														"linear-gradient(45deg, #d1730f 30%, #00a650 90%)",
 												},
 											}}>
-											{loading ? (
-												<CircularProgress size={24} />
+											{isUploading ? (
+												<>
+													<CircularProgress size={24} sx={{ mr: 1 }} />
+													Uploading...
+												</>
 											) : (
 												"Upload Album"
 											)}

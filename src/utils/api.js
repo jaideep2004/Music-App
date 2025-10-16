@@ -99,14 +99,46 @@ export const trackAPI = {
     return apiCall('/tracks/genres');
   },
   
-  // Create new track with file upload
-  create: async (formData, token) => {
-    return apiCall('/tracks', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
+  // Create new track with file upload and progress tracking
+  create: async (formData, token, onProgress = null) => {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      
+      // Handle progress if callback provided
+      if (onProgress) {
+        xhr.upload.addEventListener('progress', (event) => {
+          if (event.lengthComputable) {
+            const percentComplete = (event.loaded / event.total) * 100;
+            onProgress(percentComplete);
+          }
+        });
+      }
+      
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            resolve(data);
+          } catch (e) {
+            resolve(xhr.responseText);
+          }
+        } else {
+          try {
+            const errorData = JSON.parse(xhr.responseText);
+            reject(new Error(errorData.message || 'API request failed'));
+          } catch (e) {
+            reject(new Error('API request failed'));
+          }
+        }
+      });
+      
+      xhr.addEventListener('error', () => {
+        reject(new Error('Network error'));
+      });
+      
+      xhr.open('POST', `${API_BASE_URL}/tracks`);
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.send(formData);
     });
   },
   
