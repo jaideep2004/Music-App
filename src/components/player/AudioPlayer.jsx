@@ -17,6 +17,7 @@ import {
   Download
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
+import { useAuth } from '../../contexts/AuthContext'; // Add this import
 
 const AudioPlayer = ({ track, isPlaying, setIsPlaying }) => {
   const audioRef = useRef(null);
@@ -25,6 +26,7 @@ const AudioPlayer = ({ track, isPlaying, setIsPlaying }) => {
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
+  const { playNextTrack, playPreviousTrack, playlist, currentTrackIndex } = useAuth(); // Add these
 
   // Helper function to get audio file URL
   const getAudioUrl = (audioFilename) => {
@@ -100,6 +102,16 @@ const AudioPlayer = ({ track, isPlaying, setIsPlaying }) => {
     }
   };
 
+  // Handle next track
+  const handleNextTrack = () => {
+    playNextTrack();
+  };
+
+  // Handle previous track
+  const handlePreviousTrack = () => {
+    playPreviousTrack();
+  };
+
   // Set up audio element
   useEffect(() => {
     if (audioRef.current && track) {
@@ -138,6 +150,24 @@ const AudioPlayer = ({ track, isPlaying, setIsPlaying }) => {
     }
   }, [volume]);
 
+  // Handle track end - play next track automatically
+  useEffect(() => {
+    const handleTrackEnd = () => {
+      if (playlist.length > 0) {
+        playNextTrack();
+      }
+    };
+
+    if (audioRef.current) {
+      audioRef.current.addEventListener('ended', handleTrackEnd);
+      return () => {
+        if (audioRef.current) {
+          audioRef.current.removeEventListener('ended', handleTrackEnd);
+        }
+      };
+    }
+  }, [playlist, playNextTrack]);
+
   return (
     <motion.div
       initial={{ y: 100 }}
@@ -173,8 +203,8 @@ const AudioPlayer = ({ track, isPlaying, setIsPlaying }) => {
           <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 200 }}>
             <Box
               component="img"
-              src={track.coverImage ? `https://music-app-backend.cloud/uploads/${track.coverImage}` : '/placeholder-image.svg'}
-              alt={track.title}
+              src={track && track.coverImage ? `https://music-app-backend.cloud/uploads/${track.coverImage}` : '/placeholder-image.svg'}
+              alt={track ? track.title : 'No track'}
               sx={{ 
                 width: 50, 
                 height: 50, 
@@ -185,10 +215,10 @@ const AudioPlayer = ({ track, isPlaying, setIsPlaying }) => {
             />
             <Box>
               <Typography variant="body1" noWrap>
-                {track.title}
+                {track ? track.title : 'No track selected'}
               </Typography>
               <Typography variant="caption" color="text.secondary" noWrap>
-                {track.contributors && track.contributors.length > 0 
+                {track && track.contributors && track.contributors.length > 0 
                   ? track.contributors[0].name 
                   : 'Unknown Artist'}
               </Typography>
@@ -197,7 +227,7 @@ const AudioPlayer = ({ track, isPlaying, setIsPlaying }) => {
           
           {/* Controls */}
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <IconButton size="small">
+            <IconButton size="small" onClick={handlePreviousTrack}>
               <SkipPrevious />
             </IconButton>
             <IconButton 
@@ -206,7 +236,7 @@ const AudioPlayer = ({ track, isPlaying, setIsPlaying }) => {
             >
               {isPlaying ? <Pause /> : <PlayArrow />}
             </IconButton>
-            <IconButton size="small">
+            <IconButton size="small" onClick={handleNextTrack}>
               <SkipNext />
             </IconButton>
           </Box>

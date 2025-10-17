@@ -1,39 +1,57 @@
-// API utility functions for the music app
+import axios from 'axios';
 
 // Base API URL - adjust this based on your backend URL
-const API_BASE_URL = 'https://music-app-backend.cloud/api';
+const API_BASE_URL = "https://music-app-backend.cloud/api"
+
+// Create axios instance with default config
+const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add request interceptor to handle auth tokens
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token'); // or however you store the token
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`; 
+    }
+    return config;  
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor to handle errors
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error('API Error:', error.response || error.message);
+    return Promise.reject(error);
+  }
+);
 
 // Generic API call function
 const apiCall = async (endpoint, options = {}) => {
   try {
-    const url = `${API_BASE_URL}${endpoint}`;
+    // Remove leading slash from endpoint if it exists to avoid double slashes
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
+    const url = `${cleanEndpoint}`;
     const config = {
-      headers: {
-        ...options.headers,
-      },
+      url,
       ...options,
     };
 
-    const response = await fetch(url, config);
-    
-    // Handle different response types
-    const contentType = response.headers.get('content-type');
-    let data;
-    
-    if (contentType && contentType.indexOf('application/json') !== -1) {
-      data = await response.json();
-    } else {
-      data = await response.text();
-    }
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'API request failed');
-    }
-    
-    return data;
+    // Handle different response types based on Content-Type header
+    const response = await apiClient(config);
+    return response.data;
   } catch (error) {
-    console.error('API Error:', error);
-    throw error;
+    // Extract error message from axios error
+    const errorMessage = error.response?.data?.message || error.message || 'API request failed';
+    throw new Error(errorMessage);
   }
 };
 
@@ -43,10 +61,7 @@ export const authAPI = {
   login: async (email, password) => {
     return apiCall('/auth/login', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
+      data: { email, password },
     });
   },
   
@@ -54,21 +69,20 @@ export const authAPI = {
   register: async (username, email, password) => {
     return apiCall('/auth/register', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username, email, password }),
+      data: { username, email, password },
     });
   },
   
   // Get current user
   getMe: async (token) => {
-    return apiCall('/auth/me', {
+    // For authenticated requests, we can use axios headers
+    const config = {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-    });
+    };
+    return apiCall('/auth/me', config);
   },
 };
 
@@ -99,46 +113,15 @@ export const trackAPI = {
     return apiCall('/tracks/genres');
   },
   
-  // Create new track with file upload and progress tracking
-  create: async (formData, token, onProgress = null) => {
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      
-      // Handle progress if callback provided
-      if (onProgress) {
-        xhr.upload.addEventListener('progress', (event) => {
-          if (event.lengthComputable) {
-            const percentComplete = (event.loaded / event.total) * 100;
-            onProgress(percentComplete);
-          }
-        });
-      }
-      
-      xhr.addEventListener('load', () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          try {
-            const data = JSON.parse(xhr.responseText);
-            resolve(data);
-          } catch (e) {
-            resolve(xhr.responseText);
-          }
-        } else {
-          try {
-            const errorData = JSON.parse(xhr.responseText);
-            reject(new Error(errorData.message || 'API request failed'));
-          } catch (e) {
-            reject(new Error('API request failed'));
-          }
-        }
-      });
-      
-      xhr.addEventListener('error', () => {
-        reject(new Error('Network error'));
-      });
-      
-      xhr.open('POST', `${API_BASE_URL}/tracks`);
-      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-      xhr.send(formData);
+  // Create new track with file upload
+  create: async (formData, token) => {
+    return apiCall('/tracks', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${token}`,
+      },
+      data: formData,
     });
   },
   
@@ -148,10 +131,10 @@ export const trackAPI = {
     return apiCall(`/tracks/${id}`, {
       method: 'PATCH',
       headers: {
-        ...(!isFormData && { 'Content-Type': 'application/json' }),
+        ...(isFormData ? { 'Content-Type': 'multipart/form-data' } : { 'Content-Type': 'application/json' }),
         Authorization: `Bearer ${token}`,
       },
-      body: isFormData ? trackData : JSON.stringify(trackData),
+      data: isFormData ? trackData : trackData,
     });
   },
   
@@ -160,7 +143,6 @@ export const trackAPI = {
     return apiCall(`/tracks/${id}`, {
       method: 'DELETE',
       headers: {
-        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
     });

@@ -28,26 +28,68 @@ import {
   MusicNote
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-// Removed WaveformPreview import since we're removing waveform from cards
+import { trackAPI } from '../../utils/api';
 
 const TrackCard = ({ track }) => {
   const navigate = useNavigate();
-  const { setCurrentTrack, setIsPlaying, currentTrack, isPlaying } = useAuth();
+  const { setCurrentTrack, setIsPlaying, currentTrack, isPlaying, playAlbum } = useAuth(); // Add playAlbum
   const [isFavorited, setIsFavorited] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [albumTracks, setAlbumTracks] = useState([]);
+  const [loadingAlbumTracks, setLoadingAlbumTracks] = useState(false);
   
   const isCurrentTrack = currentTrack?._id === track._id;
   const isCurrentlyPlaying = isCurrentTrack && isPlaying;
 
-  const handlePlayPause = (e) => {
+  // Fetch album tracks when component mounts and track is an album
+  useEffect(() => {
+    const fetchAlbumTracks = async () => {
+      if (track.type === 'Album' && track._id) {
+        setLoadingAlbumTracks(true);
+        try {
+          const tracks = await trackAPI.getByAlbumId(track._id);
+          setAlbumTracks(tracks);
+        } catch (error) {
+          console.error('Failed to fetch album tracks:', error);
+        } finally {
+          setLoadingAlbumTracks(false);
+        }
+      }
+    };
+
+    fetchAlbumTracks();
+  }, [track]);
+
+  const handlePlayPause = async (e) => {
     e.stopPropagation();
-    if (isCurrentTrack) {
-      setIsPlaying(!isPlaying);
+    
+    if (track.type === 'Album') {
+      // For albums, play the entire album sequentially
+      if (albumTracks.length > 0) {
+        // Play the album with all tracks
+        playAlbum(albumTracks);
+      } else {
+        // If we don't have album tracks yet, fetch them first
+        try {
+          const tracks = await trackAPI.getByAlbumId(track._id);
+          if (tracks.length > 0) {
+            playAlbum(tracks);
+            setAlbumTracks(tracks);
+          }
+        } catch (error) {
+          console.error('Failed to fetch album tracks:', error);
+        }
+      }
     } else {
-      setCurrentTrack(track);
-      setIsPlaying(true);
+      // For singles, use existing logic
+      if (isCurrentTrack) {
+        setIsPlaying(!isPlaying);
+      } else {
+        setCurrentTrack(track);
+        setIsPlaying(true);
+      }
     }
   };
 
@@ -144,21 +186,7 @@ const TrackCard = ({ track }) => {
               transition: 'opacity 0.2s ease'
             }}
           >
-            {/* <IconButton
-              size="small"
-              onClick={handleFavorite}
-              sx={{
-                backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                color: isFavorited ? 'error.main' : 'text.secondary',
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 1)',
-                },
-                width: 32,
-                height: 32,
-              }}
-            >
-              {isFavorited ? <Favorite fontSize="small" /> : <FavoriteBorder fontSize="small" />}
-            </IconButton> */}
+          
           </Box>
           
           {/* Type indicator */}

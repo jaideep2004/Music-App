@@ -319,7 +319,6 @@ const Header = ({ mode, toggleMode }) => {
 								{/* Mobile menu items */}
 								<List sx={{ flex: 1, pt: 2 }}>
 									<ListItem 
-										button 
 										component={Link} 
 										to="/about" 
 										onClick={closeMobileMenu}
@@ -327,10 +326,14 @@ const Header = ({ mode, toggleMode }) => {
 										<ListItemIcon>
 											<Info />
 										</ListItemIcon>
-										<ListItemText primary="About" />
+										<ListItemText 
+											primary="About" 
+											primaryTypographyProps={{
+												sx: { color: mode === 'dark' ? 'white' : 'black' }
+											}}
+										/>
 									</ListItem>
 									<ListItem 
-										button 
 										component={Link} 
 										to="/contact" 
 										onClick={closeMobileMenu}
@@ -338,11 +341,15 @@ const Header = ({ mode, toggleMode }) => {
 										<ListItemIcon>
 											<ContactMail />
 										</ListItemIcon>
-										<ListItemText primary="Contact" />
+										<ListItemText 
+											primary="Contact" 
+											primaryTypographyProps={{
+												sx: { color: mode === 'dark' ? 'white' : 'black' }
+											}}
+										/>
 									</ListItem>
 									<Divider sx={{ my: 1 }} />
 									<ListItem 
-										button 
 										onClick={() => { toggleMode(); closeMobileMenu(); }}
 										sx={{ py: 1.5 }}>
 										<ListItemIcon>

@@ -26,25 +26,25 @@ import {
 	Grid,
 	Divider,
 	Stack,
-	LinearProgress,
 } from "@mui/material";
 import { useSnackbar } from 'notistack';
-import { Add, Delete, Edit, UploadFile, Image, Album as AlbumIcon, AccessTime, PlayArrow, Pause } from "@mui/icons-material";
+import { Add, Delete, Edit, UploadFile, Image, Album as AlbumIcon, AccessTime, PlayArrow, Pause, Logout } from "@mui/icons-material";
 import { motion } from "framer-motion";
 import { trackAPI } from "../../utils/api";
 import { useAuth } from "../../contexts/AuthContext";
-import { Person } from "@mui/icons-material";
+import { Person } from "@mui/icons-material";     
+import { useNavigate } from "react-router-dom";
 
 // Add this at the top of the component
 const AdminDashboard = () => {
 	const { enqueueSnackbar } = useSnackbar();
+	const { user, logout } = useAuth();
+	const navigate = useNavigate();
 	const [activeTab, setActiveTab] = useState(0);
 	const [tracks, setTracks] = useState([]);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState("");
-	const [uploadProgress, setUploadProgress] = useState(0); // New state for upload progress
-	const [isUploading, setIsUploading] = useState(false); // New state for upload status
 
 	// Form state for new track/single
 	const [newTrack, setNewTrack] = useState({
@@ -54,6 +54,7 @@ const AdminDashboard = () => {
 		contributors: [{ name: "", role: "Artist" }],
 		listenCount: 0,
 		publishDate: new Date().toISOString().split('T')[0], // Add publish date field
+		releaseDate: "", // Add release date field
 	});
 
 	// Form state for new album
@@ -70,6 +71,7 @@ const AdminDashboard = () => {
 		],
 		listenCount: 0,
 		publishDate: new Date().toISOString().split('T')[0], // Add publish date field
+		releaseDate: "", // Add release date field
 	});
 
 	// Form state for editing track
@@ -80,6 +82,7 @@ const AdminDashboard = () => {
 		contributors: [{ name: "", role: "Artist" }],
 		listenCount: 0,
 		publishDate: new Date().toISOString().split('T')[0], // Add publish date field
+		releaseDate: "", // Add release date field
 	});
 
 	// File upload state
@@ -98,8 +101,7 @@ const AdminDashboard = () => {
 	const [editingTrack, setEditingTrack] = useState(null);
 	const [editDialogOpen, setEditDialogOpen] = useState(false);
 
-	const { user } = useAuth();
-	const token = user?.token;
+
 
 	// Helper function to get cover image URL
 	const getCoverImageUrl = (coverImagePath) => {
@@ -107,7 +109,8 @@ const AdminDashboard = () => {
 		// Extract the filename from the full path
 		// The path might be something like "uploads\coverImage-123456789.jpg"
 		const filename = coverImagePath.split("\\").pop().split("/").pop();
-		return `https://music-app-backend.cloud/uploads/${filename}`;
+		// Use relative path instead of absolute URL
+		return `/uploads/${filename}`;
 	};
 
 	// Helper function to format duration
@@ -135,10 +138,8 @@ const AdminDashboard = () => {
 	};
 
 	useEffect(() => {
-		if (token) {
-			fetchTracks();
-		}
-	}, [token, activeTab]);
+		fetchTracks();
+	}, [activeTab]);
 
 	// Update editTrack state when editingTrack changes
 	useEffect(() => {
@@ -152,6 +153,7 @@ const AdminDashboard = () => {
 				],
 				listenCount: editingTrack.listenCount || 0,
 				publishDate: editingTrack.publishDate ? new Date(editingTrack.publishDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0], // Add publish date
+				releaseDate: editingTrack.releaseDate ? new Date(editingTrack.releaseDate).toISOString().split('T')[0] : "", // Add release date
 			});
 		}
 	}, [editingTrack]);
@@ -539,8 +541,7 @@ const AdminDashboard = () => {
 			return;
 		}
 
-		setIsUploading(true);
-		setUploadProgress(0);
+		setLoading(true);
 		setError("");
 		setSuccess("");
 
@@ -557,10 +558,11 @@ const AdminDashboard = () => {
 			// Add other optional fields
 			formData.append("listenCount", newTrack.listenCount.toString());
 			formData.append("publishDate", newTrack.publishDate); // Use custom publish date
+			if (newTrack.releaseDate) {
+				formData.append("releaseDate", newTrack.releaseDate); // Use custom release date
+			}
 
-			await trackAPI.create(formData, token, (progress) => {
-				setUploadProgress(progress);
-			});
+			await trackAPI.create(formData);
 
 			setSuccess("Track uploaded successfully!");
 			enqueueSnackbar("Track uploaded successfully!", { variant: "success" });
@@ -572,6 +574,7 @@ const AdminDashboard = () => {
 				genre: "",
 				contributors: [{ name: "", role: "Artist" }],
 				publishDate: new Date().toISOString().split('T')[0], // Reset to today's date
+				releaseDate: "", // Reset release date
 			});
 			setCoverImage(null);
 			setAudioFile(null);
@@ -585,8 +588,7 @@ const AdminDashboard = () => {
 			setError(errorMessage);
 			enqueueSnackbar(errorMessage, { variant: "error" });
 		} finally {
-			setIsUploading(false);
-			setUploadProgress(0);
+			setLoading(false);
 		}
 	};
 
@@ -634,8 +636,7 @@ const AdminDashboard = () => {
 			}
 		}
 
-		setIsUploading(true);
-		setUploadProgress(0);
+		setLoading(true);
 		setError("");
 		setSuccess("");
 
@@ -649,11 +650,11 @@ const AdminDashboard = () => {
 			albumFormData.append("coverImage", albumCoverImage);
 			albumFormData.append("listenCount", newAlbum.listenCount.toString());
 			albumFormData.append("publishDate", newAlbum.publishDate); // Use custom publish date
+			if (newAlbum.releaseDate) {
+				albumFormData.append("releaseDate", newAlbum.releaseDate); // Use custom release date
+			}
 
-			const albumResponse = await trackAPI.create(albumFormData, token, (progress) => {
-				// For album creation, we'll show progress for the first part
-				setUploadProgress(progress / 2);
-			});
+			const albumResponse = await trackAPI.create(albumFormData);
 			const albumId = albumResponse._id;
 
 			// Then, create each track in the album
@@ -672,15 +673,13 @@ const AdminDashboard = () => {
 				trackFormData.append("trackNumber", track.trackNumber);
 				trackFormData.append("listenCount", newAlbum.listenCount.toString()); // Use album's play count for tracks
 				trackFormData.append("publishDate", newAlbum.publishDate); // Use album's publish date for tracks
-
+				if (newAlbum.releaseDate) {
+					trackFormData.append("releaseDate", newAlbum.releaseDate); // Use album's release date for tracks
+				}
 				// For tracks in an album, we use the album cover image
 				trackFormData.append("coverImage", albumCoverImage);
 
-				// Calculate progress for each track upload
-				const trackProgress = (i + 1) / newAlbum.tracks.length * 50 + 50;
-				await trackAPI.create(trackFormData, token, (progress) => {
-					setUploadProgress(trackProgress - (50 - progress / 2));
-				});
+				await trackAPI.create(trackFormData);
 			}
 
 			setSuccess("Album uploaded successfully!");
@@ -699,6 +698,7 @@ const AdminDashboard = () => {
 					},
 				],
 				publishDate: new Date().toISOString().split('T')[0], // Reset to today's date
+				releaseDate: "", // Reset release date
 			});
 			setAlbumCoverImage(null);
 			setAlbumTracks([]);
@@ -712,8 +712,7 @@ const AdminDashboard = () => {
 			setError(errorMessage);
 			enqueueSnackbar(errorMessage, { variant: "error" });
 		} finally {
-			setIsUploading(false);
-			setUploadProgress(0);
+			setLoading(false);
 		}
 	};
 
@@ -752,6 +751,7 @@ const AdminDashboard = () => {
 				contributors: editTrack.contributors,
 				listenCount: editTrack.listenCount,
 				publishDate: editTrack.publishDate, // Add publish date
+				releaseDate: editTrack.releaseDate, // Add release date
 			};
 
 			// If new files are uploaded, include them
@@ -773,7 +773,7 @@ const AdminDashboard = () => {
 				formData.append("audioFile", audioFile);
 			}
 
-			await trackAPI.update(editingTrack._id, formData, token);
+			await trackAPI.update(editingTrack._id, formData);
 
 			setSuccess("Track updated successfully!");
 			enqueueSnackbar("Track updated successfully!", { variant: "success" });
@@ -813,7 +813,7 @@ const AdminDashboard = () => {
 			setLoading(true);
 			setError("");
 			try {
-				await trackAPI.delete(trackId, token);
+				await trackAPI.delete(trackId);
 				setSuccess("Track deleted successfully!");
 				enqueueSnackbar("Track deleted successfully!", { variant: "success" });
 				fetchTracks(); // Refresh tracks list
@@ -863,26 +863,43 @@ const AdminDashboard = () => {
 		setAudioFilePreview(null);
 	};
 
+	const handleLogout = () => {
+		logout();
+		navigate("/");
+	};
+
 	return (
 		<Container maxWidth='lg' sx={{ py: 4 }}>
 			<motion.div
 				initial={{ opacity: 0, y: 20 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.5 }}>
-				<Typography
-					variant='h3'
-					component='h1'
-					gutterBottom
-					sx={{
-						fontWeight: "bold",
-						textAlign: "center",
-						background: "linear-gradient(45deg, #f68712 30%, #fb5e8c 90%)",
-						WebkitBackgroundClip: "text",
-						WebkitTextFillColor: "transparent",
-						mb: 4,
-					}}>
-					Admin Dashboard
-				</Typography>
+				<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+					<Typography
+						variant='h3'
+						component='h1'
+						gutterBottom
+						sx={{
+							fontWeight: "bold",
+							background: "linear-gradient(45deg, #f68712 30%, #fb5e8c 90%)",
+							WebkitBackgroundClip: "text",
+							WebkitTextFillColor: "transparent",
+						}}>
+						Admin Dashboard
+					</Typography>
+					<Button
+						variant="contained"
+						color="error"
+						startIcon={<Logout />}
+						onClick={handleLogout}
+						sx={{
+							borderRadius: 2,
+							fontWeight: "bold",
+							boxShadow: 3,
+						}}>
+						Logout
+					</Button>
+				</Box>
 
 				{error && (
 					<Alert severity='error' sx={{ mb: 2 }}>
@@ -894,16 +911,6 @@ const AdminDashboard = () => {
 					<Alert severity='success' sx={{ mb: 2 }}>
 						{success}
 					</Alert>
-				)}
-
-				{/* Progress Bar for Uploads */}
-				{isUploading && (
-					<Box sx={{ mb: 2 }}>
-						<Typography variant="body1" gutterBottom>
-							Uploading... {Math.round(uploadProgress)}%
-						</Typography>
-						<LinearProgress variant="determinate" value={uploadProgress} />
-					</Box>
 				)}
 
 				<Paper
@@ -1012,10 +1019,22 @@ const AdminDashboard = () => {
 
 									<TextField
 										fullWidth
-										label='Release Date'
+										label='Publish Date'
 										name='publishDate'
 										type='date'
 										value={newTrack.publishDate}
+										onChange={handleInputChange}
+										margin='normal'
+										variant='outlined'
+										InputLabelProps={{ shrink: true }}
+									/>
+
+									<TextField
+										fullWidth
+										label='Release Date'
+										name='releaseDate'
+										type='date'
+										value={newTrack.releaseDate}
 										onChange={handleInputChange}
 										margin='normal'
 										variant='outlined'
@@ -1084,8 +1103,9 @@ const AdminDashboard = () => {
 												required
 												variant='outlined'
 												fullWidth
+												style={{flex:1}}
 											/>
-											<FormControl variant='outlined'>
+											<FormControl variant='outlined' style={{flex:1}}>
 												<InputLabel>Role</InputLabel>
 												<Select
 													value={contributor.role}
@@ -1104,7 +1124,7 @@ const AdminDashboard = () => {
 													<MenuItem value='Arranger'>Arranger</MenuItem>
 													<MenuItem value='Engineer'>Engineer</MenuItem>
 													<MenuItem value='Performer'>Performer</MenuItem>
-													<MenuItem value='Writer'>Writer</MenuItem>
+													<MenuItem value='Label'>Label</MenuItem>
 													<MenuItem value='Other'>Other</MenuItem>
 												</Select>
 											</FormControl>
@@ -1251,7 +1271,7 @@ const AdminDashboard = () => {
 											type='submit'
 											variant='contained'
 											size='large'
-											disabled={loading || isUploading}
+											disabled={loading}
 											sx={{
 												background:
 													"linear-gradient(45deg, #f68712 30%, #fb5e8c 90%)",
@@ -1261,11 +1281,8 @@ const AdminDashboard = () => {
 														"linear-gradient(45deg, #d1730f 30%, #00a650 90%)",
 												},
 											}}>
-											{isUploading ? (
-												<>
-													<CircularProgress size={24} sx={{ mr: 1 }} />
-													Uploading...
-												</>
+											{loading ? (
+												<CircularProgress size={24} />
 											) : (
 												"Upload Track"
 											)}
@@ -1380,10 +1397,22 @@ const AdminDashboard = () => {
 
 									<TextField
 										fullWidth
-										label='Release Date'
+										label='Publish Date'
 										name='publishDate'
 										type='date'
 										value={newAlbum.publishDate}
+										onChange={(e) => handleInputChange(e, false, true)}
+										margin='normal'
+										variant='outlined'
+										InputLabelProps={{ shrink: true }}
+									/>
+
+									<TextField
+										fullWidth
+										label='Release Date'
+										name='releaseDate'
+										type='date'
+										value={newAlbum.releaseDate}
 										onChange={(e) => handleInputChange(e, false, true)}
 										margin='normal'
 										variant='outlined'
@@ -1425,8 +1454,9 @@ const AdminDashboard = () => {
 												required
 												variant='outlined'
 												fullWidth
+												style={{flex: 1}}
 											/>
-											<FormControl variant='outlined'>
+											<FormControl variant='outlined' style={{flex: 1}}>
 												<InputLabel>Role</InputLabel>
 												<Select
 													value={contributor.role}
@@ -1447,7 +1477,7 @@ const AdminDashboard = () => {
 													<MenuItem value='Arranger'>Arranger</MenuItem>
 													<MenuItem value='Engineer'>Engineer</MenuItem>
 													<MenuItem value='Performer'>Performer</MenuItem>
-													<MenuItem value='Writer'>Writer</MenuItem>
+													<MenuItem value='Label'>Label</MenuItem>
 													<MenuItem value='Other'>Other</MenuItem>
 												</Select>
 											</FormControl>
@@ -1610,8 +1640,9 @@ const AdminDashboard = () => {
 															required
 															variant='outlined'
 															fullWidth
+															style={{flex: 1}}
 														/>
-														<FormControl variant='outlined'>
+														<FormControl variant='outlined' style={{flex: 1}}>
 															<InputLabel>Role</InputLabel>
 															<Select
 																value={contributor.role}
@@ -1634,7 +1665,7 @@ const AdminDashboard = () => {
 																<MenuItem value='Arranger'>Arranger</MenuItem>
 																<MenuItem value='Engineer'>Engineer</MenuItem>
 																<MenuItem value='Performer'>Performer</MenuItem>
-																<MenuItem value='Writer'>Writer</MenuItem>
+																<MenuItem value='Label'>Label</MenuItem>
 																<MenuItem value='Other'>Other</MenuItem>
 															</Select>
 														</FormControl>
@@ -1751,7 +1782,7 @@ const AdminDashboard = () => {
 											type='submit'
 											variant='contained'
 											size='large'
-											disabled={loading || isUploading}
+											disabled={loading}
 											sx={{
 												background:
 													"linear-gradient(45deg, #f68712 30%, #fb5e8c 90%)",
@@ -1761,11 +1792,8 @@ const AdminDashboard = () => {
 														"linear-gradient(45deg, #d1730f 30%, #00a650 90%)",
 												},
 											}}>
-											{isUploading ? (
-												<>
-													<CircularProgress size={24} sx={{ mr: 1 }} />
-													Uploading...
-												</>
+											{loading ? (
+												<CircularProgress size={24} />
 											) : (
 												"Upload Album"
 											)}
@@ -2166,10 +2194,22 @@ const AdminDashboard = () => {
 
 							<TextField
 								fullWidth
-								label='Release Date'
+								label='Publish Date'
 								name='publishDate'
 								type='date'
 								value={editTrack.publishDate}
+								onChange={(e) => handleInputChange(e, true)}
+								margin='normal'
+								variant='outlined'
+								InputLabelProps={{ shrink: true }}
+							/>
+
+							<TextField
+								fullWidth
+								label='Release Date'
+								name='releaseDate'
+								type='date'
+								value={editTrack.releaseDate}
 								onChange={(e) => handleInputChange(e, true)}
 								margin='normal'
 								variant='outlined'
@@ -2200,8 +2240,9 @@ const AdminDashboard = () => {
 										}
 										variant='outlined'
 										fullWidth
+										style={{flex:1}}
 									/>
-									<FormControl variant='outlined'>
+									<FormControl variant='outlined' style={{flex:1}}>
 										<InputLabel>Role</InputLabel>
 										<Select
 											value={contributor.role}
@@ -2221,7 +2262,7 @@ const AdminDashboard = () => {
 											<MenuItem value='Arranger'>Arranger</MenuItem>
 											<MenuItem value='Engineer'>Engineer</MenuItem>
 											<MenuItem value='Performer'>Performer</MenuItem>
-											<MenuItem value='Writer'>Writer</MenuItem>
+											<MenuItem value='Label'>Label</MenuItem>
 											<MenuItem value='Other'>Other</MenuItem>
 										</Select>
 									</FormControl>

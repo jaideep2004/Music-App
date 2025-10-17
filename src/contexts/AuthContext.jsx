@@ -15,6 +15,8 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [currentTrack, setCurrentTrack] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [playlist, setPlaylist] = useState([]); // Add playlist state
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(0); // Add current track index
 
   useEffect(() => {
     // Check if user is logged in on app start
@@ -45,6 +47,39 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
   };
 
+  // Function to play an album (sets up the playlist)
+  const playAlbum = (tracks) => {
+    if (tracks && tracks.length > 0) {
+      setPlaylist(tracks);
+      setCurrentTrackIndex(0);
+      setCurrentTrack(tracks[0]);
+      setIsPlaying(true);
+    }
+  };
+
+  // Function to play next track in playlist
+  const playNextTrack = () => {
+    if (playlist.length > 0 && currentTrackIndex < playlist.length - 1) {
+      const nextIndex = currentTrackIndex + 1;
+      setCurrentTrackIndex(nextIndex);
+      setCurrentTrack(playlist[nextIndex]);
+      setIsPlaying(true);
+    } else {
+      // End of playlist, stop playback
+      setIsPlaying(false);
+    }
+  };
+
+  // Function to play previous track in playlist
+  const playPreviousTrack = () => {
+    if (playlist.length > 0 && currentTrackIndex > 0) {
+      const prevIndex = currentTrackIndex - 1;
+      setCurrentTrackIndex(prevIndex);
+      setCurrentTrack(playlist[prevIndex]);
+      setIsPlaying(true);
+    }
+  };
+
   const value = {
     user,
     login,
@@ -54,7 +89,14 @@ export const AuthProvider = ({ children }) => {
     currentTrack,
     setCurrentTrack,
     isPlaying,
-    setIsPlaying
+    setIsPlaying,
+    playlist,
+    setPlaylist,
+    currentTrackIndex,
+    setCurrentTrackIndex,
+    playAlbum,
+    playNextTrack,
+    playPreviousTrack
   };
 
   return (

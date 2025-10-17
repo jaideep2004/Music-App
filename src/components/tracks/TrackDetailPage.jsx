@@ -505,6 +505,7 @@ const TrackDetailPage = () => {
 											mb: { xs: 1, sm: 2 },
 											fontSize: { xs: "1.5rem", sm: "1.8rem", md: "2.5rem" },
 											letterSpacing: "-0.5px",
+											maxWidth: "670px"
 										}}>
 										{track.title}
 									</Typography>
@@ -539,7 +540,8 @@ const TrackDetailPage = () => {
 										spacing={0.5}
 										sx={{ mb: { xs: 2, sm: 3 }, flexWrap: "wrap" }}>
 										<Chip
-											label={track.genre}
+											icon={<CalendarToday sx={{ fontSize: '0.9rem' }} />}
+											label={`Publish Date: ${new Date(track.publishDate).toLocaleDateString('en-GB')}`}
 											color='primary'
 											variant='filled'
 											size={isMobile ? 'small' : 'medium'}
@@ -559,8 +561,7 @@ const TrackDetailPage = () => {
 											/>
 										)}
 										<Chip
-											icon={<CalendarToday sx={{ fontSize: '0.9rem' }} />}
-											label={new Date(track.createdAt).getFullYear()}
+											label="2025"
 											variant='outlined'
 											size={isMobile ? 'small' : 'medium'}
 											sx={{
@@ -586,7 +587,8 @@ const TrackDetailPage = () => {
 											fontWeight: 700, 
 											mb: 2, 
 											color: "primary.main",
-											fontSize: { xs: "1.1rem", sm: "1.25rem", md: "1.5rem" }
+											fontSize: { xs: "1.1rem", sm: "1.25rem", md: "1.5rem" },
+											maxWidth: "670px"
 										}}>
 										{track.type === "Album" ? "Album Credits" : "Song Credits"}: {track.title}
 									</Typography>
@@ -609,7 +611,7 @@ const TrackDetailPage = () => {
 													{contributor.name}
 												</Typography>
 											))}
-											<Typography
+											{/* <Typography
 												variant='body1'
 												sx={{
 													mt: 1,
@@ -622,7 +624,7 @@ const TrackDetailPage = () => {
 													},
 												}}>
 												{track.type === "Album" ? "Album Release" : "Single Audio Official"}
-											</Typography>
+											</Typography> */}
 											{/* Add Release Date to Song Credits */}
 											<Typography
 												variant='body1'
@@ -637,6 +639,37 @@ const TrackDetailPage = () => {
 													},
 												}}>
 												{new Date(track.publishDate).toLocaleDateString('en-GB')}
+											</Typography>
+											{track.releaseDate && (
+												<Typography
+													variant='body1'
+													sx={{
+														mt: 1,
+														fontWeight: 500,
+														fontSize: { xs: "0.875rem", sm: "1rem" },
+														"&:before": {
+															content: `"Original Release Date : "`,
+															fontWeight: 700,
+															color: "primary.main",
+														},
+													}}>
+													{new Date(track.releaseDate).toLocaleDateString('en-GB')}
+												</Typography>
+											)}
+											{/* Add Genre to Song Credits */}
+											<Typography
+												variant='body1'
+												sx={{
+													mt: 1,
+													fontWeight: 500,
+													fontSize: { xs: "0.875rem", sm: "1rem" },
+													"&:before": {
+														content: `"Genre : "`,
+														fontWeight: 700,
+														color: "primary.main",
+													},
+												}}>
+												{track.genre}
 											</Typography>
 										</Box>
 									) : (
@@ -829,10 +862,10 @@ const TrackDetailPage = () => {
 								</TableContainer>
 
 								{/* Info sections */}
-								<Grid container spacing={4} >
+								<Grid container spacing={4} sx={{ width: '100%', margin: 0 }}>
 									{/* Technical Information */}
-									<Grid item xs={12} md={6} sx={{ xs: { flex: 0 }, sm: { flex: 0 }, md: { flex: 1} }}>
-										<Paper sx={{ p: 3, height: "100%", borderRadius: 2 }}>
+									<Grid item xs={12} md={6} sx={{ display: 'flex', padding: 0, width: '100%' }}>
+										<Paper sx={{ p: 3, height: "100%", borderRadius: 2, width: '100%' }}>
 											<Typography
 												variant='h6'
 												gutterBottom
@@ -942,8 +975,8 @@ const TrackDetailPage = () => {
 									</Grid>
 
 									{/* Release Information */}
-									<Grid item xs={12} md={6} sx={{ xs: { flex: 0 }, sm: { flex: 0 }, md: { flex: 1} }}>
-										<Paper sx={{ p: 3, height: "100%", borderRadius: 2 }}>
+									<Grid item xs={12} md={6} sx={{ display: 'flex', padding: 0, width: '100%' }}>
+										<Paper sx={{ p: 3, height: "100%", borderRadius: 2, width: '100%' }}>
 											<Typography
 												variant='h6'
 												gutterBottom
@@ -960,12 +993,26 @@ const TrackDetailPage = () => {
 														justifyContent: "space-between",
 													}}>
 													<Typography variant='body2' color='text.secondary'>
-														Release Date:
+														Publish Date:
 													</Typography>
 													<Typography variant='body2' sx={{ fontWeight: 600 }}>
 														{new Date(track.publishDate).toLocaleDateString('en-GB')}
 													</Typography>
 												</Box>
+												{track.releaseDate && (
+													<Box
+														sx={{
+															display: "flex",
+															justifyContent: "space-between",
+														}}>
+														<Typography variant='body2' color='text.secondary'>
+															Release Date:
+														</Typography>
+														<Typography variant='body2' sx={{ fontWeight: 600 }}>
+															{new Date(track.releaseDate).toLocaleDateString('en-GB')}
+														</Typography>
+													</Box>
+												)}
 												<Box
 													sx={{
 														display: "flex",
@@ -988,32 +1035,7 @@ const TrackDetailPage = () => {
 														}}
 													/>
 												</Box>
-												<Box
-													sx={{
-														display: "flex",
-														justifyContent: "space-between",
-													}}>
-													<Typography variant='body2' color='text.secondary'>
-														Genre:
-													</Typography>
-													<Typography variant='body2' sx={{ fontWeight: 600 }}>
-														{track.genre}
-													</Typography>
-												</Box>
-												{/* <Box
-													sx={{
-														display: "flex",
-														justifyContent: "space-between",
-													}}>
-													<Typography variant='body2' color='text.secondary'>
-														ID:
-													</Typography>
-													<Typography
-														variant='body2'
-														sx={{ fontWeight: 600, fontFamily: "monospace" }}>
-														{track._id?.substring(0, 8)}...
-													</Typography>
-												</Box> */}
+												{/* Genre is now displayed in the credits section */}
 											</Stack>
 										</Paper>
 									</Grid>

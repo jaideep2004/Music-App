@@ -80,22 +80,18 @@ const HomePage = () => {
     setError('');
     try {
       // Prepare query parameters
-      const params = new URLSearchParams();
-      params.append('page', page);
-      params.append('pageSize', 8);
+      const queryParams = {
+        page: page,
+        pageSize: 8
+      };
       
       // If a genre is selected (and it's not one of our special categories)
       if (selectedCategory && selectedCategory !== 'all' && selectedCategory !== 'new' && selectedCategory !== 'popular' && selectedCategory !== 'featured') {
-        params.append('genre', selectedCategory);
+        queryParams.genre = selectedCategory;
       }
       
-      // Fetch tracks with parameters
-      const response = await fetch(`https://music-app-backend.cloud/api/tracks?${params.toString()}`);
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to fetch tracks');
-      }
+      // Use the trackAPI utility instead of direct fetch
+      const data = await trackAPI.getAll(page, 8);
       
       setTracks(data.tracks || []);
       setTotalPages(data.pages || 1);

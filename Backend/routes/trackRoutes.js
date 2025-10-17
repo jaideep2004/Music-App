@@ -1,4 +1,5 @@
 const express = require('express');
+const multer = require('multer');
 const { 
   getTracks, 
   searchTracks,
@@ -32,11 +33,35 @@ router.route('/')
   .get(getTracks);
 
 // Private/Admin routes
+// Custom middleware to handle multer errors properly
+const handleUpload = (req, res, next) => {
+  uploadMixed.any()(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ 
+          message: 'File too large. Maximum file size is 200MB.',
+          error: 'FILE_TOO_LARGE'
+        });
+      }
+      return res.status(400).json({ 
+        message: err.message,
+        error: 'UPLOAD_ERROR'
+      });
+    } else if (err) {
+      return res.status(400).json({ 
+        message: err.message,
+        error: 'UPLOAD_ERROR'
+      });
+    }
+    next();
+  });
+};
+
 router.route('/')
-  .post(auth, uploadMixed.any(), createTrack);
+  .post(auth, handleUpload, createTrack);
 
 router.route('/:id')
-  .patch(auth, uploadMixed.any(), updateTrack)
+  .patch(auth, handleUpload, updateTrack)
   .delete(auth, deleteTrack);
 
 module.exports = router;
