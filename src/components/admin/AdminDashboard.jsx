@@ -109,8 +109,8 @@ const AdminDashboard = () => {
 		// Extract the filename from the full path
 		// The path might be something like "uploads\coverImage-123456789.jpg"
 		const filename = coverImagePath.split("\\").pop().split("/").pop();
-		// Use relative path instead of absolute URL
-		return `/uploads/${filename}`;
+		// Use full URL path for images
+		return `https://music-app-backend.cloud/uploads/${filename}`;
 	};
 
 	// Helper function to format duration

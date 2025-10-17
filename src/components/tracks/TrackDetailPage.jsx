@@ -560,15 +560,7 @@ const TrackDetailPage = () => {
 												}}
 											/>
 										)}
-										<Chip
-											label="2025"
-											variant='outlined'
-											size={isMobile ? 'small' : 'medium'}
-											sx={{
-												fontWeight: 600,
-												fontSize: { xs: '0.65rem', sm: '0.75rem' }
-											}}
-										/>
+										
 									</Stack>
 								</Box>
 
@@ -640,7 +632,7 @@ const TrackDetailPage = () => {
 												}}>
 												{new Date(track.publishDate).toLocaleDateString('en-GB')}
 											</Typography>
-											{track.releaseDate && (
+											{/* {track.releaseDate && (
 												<Typography
 													variant='body1'
 													sx={{
@@ -655,7 +647,7 @@ const TrackDetailPage = () => {
 													}}>
 													{new Date(track.releaseDate).toLocaleDateString('en-GB')}
 												</Typography>
-											)}
+											)} */}
 											{/* Add Genre to Song Credits */}
 											<Typography
 												variant='body1'

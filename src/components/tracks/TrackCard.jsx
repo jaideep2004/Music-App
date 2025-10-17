@@ -109,8 +109,10 @@ const TrackCard = ({ track }) => {
     if (coverImageFilename.startsWith('http')) {
       return coverImageFilename; // Already a full URL
     }
+    // Extract the filename from the full path if needed
+    const filename = coverImageFilename.split('\\').pop().split('/').pop();
     // Construct the full URL for the image
-    return `https://music-app-backend.cloud/uploads/${coverImageFilename}`;
+    return `https://music-app-backend.cloud/uploads/${filename}`;
   };
 
   // Format duration from seconds to MM:SS
