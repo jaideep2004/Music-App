@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Container, 
   Grid, 
@@ -17,7 +17,8 @@ import {
   FormControl,
   Select,
   MenuItem,
-  InputLabel
+  InputLabel,
+  IconButton
 } from '@mui/material';
 import { 
   Home as HomeIcon,
@@ -26,7 +27,9 @@ import {
   Star,
   FilterList,
   ViewModule,
-  ViewList
+  ViewList,
+  ChevronLeft,
+  ChevronRight
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import TrackCard from './TrackCard';
@@ -44,6 +47,8 @@ const HomePage = () => {
   const [selectedCategory, setSelectedCategory] = useState('all'); // Change default to 'all'
   const [sortBy, setSortBy] = useState('newest');
   const [viewMode, setViewMode] = useState('grid');
+  const [hasMore, setHasMore] = useState(true); // For infinite loading
+  const scrollContainerRef = useRef(null);
   
   // Update categories to include dynamic genres
   const staticCategories = [
@@ -79,22 +84,25 @@ const HomePage = () => {
     setLoading(true);
     setError('');
     try {
-      // Prepare query parameters
-      const queryParams = {
-        page: page,
-        pageSize: 8
-      };
-      
       // If a genre is selected (and it's not one of our special categories)
+      let params = { page, limit: 8 };
+      
       if (selectedCategory && selectedCategory !== 'all' && selectedCategory !== 'new' && selectedCategory !== 'popular' && selectedCategory !== 'featured') {
-        queryParams.genre = selectedCategory;
+        params.genre = selectedCategory;
       }
       
-      // Use the trackAPI utility instead of direct fetch
-      const data = await trackAPI.getAll(page, 8);
+      // Use the trackAPI utility with proper parameters
+      const data = await trackAPI.getAll(page, 8, params.genre);
       
-      setTracks(data.tracks || []);
+      // For "load more" functionality, we append new tracks instead of replacing
+      if (page === 1) {
+        setTracks(data.tracks || []);
+      } else {
+        setTracks(prevTracks => [...prevTracks, ...(data.tracks || [])]);
+      }
+      
       setTotalPages(data.pages || 1);
+      setHasMore(page < data.pages);
     } catch (err) {
       setError(err.message || 'Failed to fetch tracks');
       setTracks([]);
@@ -103,9 +111,10 @@ const HomePage = () => {
     }
   };
 
-  const handlePageChange = (event, value) => {
-    setPage(value);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handleLoadMore = () => {
+    if (hasMore) {
+      setPage(prevPage => prevPage + 1);
+    }
   };
   
   const handleCategoryChange = (category) => {
@@ -116,6 +125,19 @@ const HomePage = () => {
   const handleSortChange = (event) => {
     setSortBy(event.target.value);
     setPage(1); // Reset to first page
+  };
+
+  // Scroll functions for genre navigation
+  const scrollLeft = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: -200, behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: 200, behavior: 'smooth' });
+    }
   };
 
   // Combine static categories with dynamic genres
@@ -166,43 +188,90 @@ const HomePage = () => {
         >
           {/* Header Section - Move categories here */}
           <Box sx={{ mb: { xs: 2, sm: 4 } }}>
-            {/* Category Pills - Moved outside of filters and below the heading */}
-            <Stack 
-              direction="row" 
-              spacing={1} 
-              sx={{ 
-                mb: { xs: 2, sm: 4 },
-                overflowX: 'auto',
-                pb: 1,
-                px: { xs: 1, sm: 0 }
-              }}
-              style={{justifyContent: 'center'}}
-            >
-              {allCategories.map((category) => (
-                <Chip
-                  key={category.id}
-                  icon={category.icon}
-                  label={category.label}
-                  clickable
-                  onClick={() => handleCategoryChange(category.id)}
-                  variant={selectedCategory === category.id ? 'filled' : 'outlined'}
-                  color={selectedCategory === category.id ? 'primary' : 'default'}
-                  sx={{
-                    minWidth: { xs: 'fit-content', sm: 'fit-content' },
-                    fontWeight: 600,
-                    px: { xs: 1, sm: 2 },
-                    py: { xs: 0.5, sm: 1 },
-                    height: { xs: 32, sm: 40 },
-                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                    '&:hover': {
-                      backgroundColor: selectedCategory === category.id ? 'primary.dark' : 'primary.50'
-                    }
-                  }}
-                />
-              ))}
-            </Stack>
+            {/* Category Pills - With scroll buttons */}
+            <Box sx={{ 
+              mb: { xs: 2, sm: 4 },
+              px: { xs: 1, sm: 0 },
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center'
+            }}>
+              <IconButton 
+                onClick={scrollLeft}
+                sx={{ 
+                  zIndex: 2,
+                  mr: 1,
+                  backgroundColor: 'background.paper',
+                  boxShadow: 1,
+                  '&:hover': {
+                    backgroundColor: 'background.paper'
+                  }
+                }}
+              >
+                <ChevronLeft />
+              </IconButton>
+              
+              <Box 
+                ref={scrollContainerRef}
+                sx={{ 
+                  display: 'flex',
+                  overflowX: 'hidden', // Hide scrollbar
+                  pb: 1,
+                  px: 0.5,
+                  flex: 1
+                }}
+              >
+                {allCategories.map((category) => (
+                  <Chip
+                    key={category.id}
+                    icon={category.icon}
+                    label={category.label}
+                    clickable
+                    onClick={() => handleCategoryChange(category.id)}
+                    variant={selectedCategory === category.id ? 'filled' : 'outlined'}
+                    color={selectedCategory === category.id ? 'primary' : 'default'}
+                    sx={{
+                      minWidth: { xs: 'fit-content', sm: 'fit-content' },
+                      fontWeight: 600,
+                      px: { xs: 1, sm: 2 },
+                      py: { xs: 0.5, sm: 1 },
+                      height: { xs: 32, sm: 40 },
+                      fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                      mr: 1,
+                      '&:hover': {
+                        backgroundColor: selectedCategory === category.id ? 'primary.dark' : 'primary.50'
+                      }
+                    }}
+                  />
+                ))}
+              </Box>
+              
+              <IconButton 
+                onClick={scrollRight}
+                sx={{ 
+                  zIndex: 2,
+                  ml: 1,
+                  backgroundColor: 'background.paper',
+                  boxShadow: 1,
+                  '&:hover': {
+                    backgroundColor: 'background.paper'
+                  }
+                }}
+              >
+                <ChevronRight />
+              </IconButton>
+            </Box>
           </Box>
         </motion.div>
+
+        {/* Filter message */}
+        {selectedCategory && selectedCategory !== 'all' && (
+          <Box sx={{ mb: 2, textAlign: 'center' }}>
+            <Typography variant="body1" color="primary">
+              Showing tracks for: <strong>{selectedCategory}</strong>
+            </Typography>
+          </Box>
+        )}
 
         {/* Content Grid */}
         {tracks.length === 0 && !loading ? (
@@ -233,7 +302,7 @@ const HomePage = () => {
                 xl: 'repeat(5, 1fr)'
               },
               gap: { xs: 0, sm: 1, md: 1 },
-              px: { xs: 3, sm: 0 }
+              px: { xs: 0, sm: 0 }
             }}>
               {tracks.map((track, index) => (
                 <Box 
@@ -268,50 +337,32 @@ const HomePage = () => {
               </Box>
             )}
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <Box 
-                sx={{ 
-                  display: 'flex', 
-                  justifyContent: 'center', 
-                  mt: { xs: 3, sm: 6 },
-                  py: { xs: 2, sm: 4 }
-                }}
-              >
-                <Pagination 
-                  count={totalPages} 
-                  page={page} 
-                  onChange={handlePageChange} 
-                  color="primary"
-                  sx={{
-                    '& .MuiPaginationItem-root': {
-                      fontWeight: 600,
-                      minWidth: { xs: 32, sm: 40 },
-                      height: { xs: 32, sm: 40 }
-                    }
-                  }}
-                />
-              </Box>
-            )}
-            
-            {/* View More Button */}
+            {/* Load More Button */}
             <Box sx={{ textAlign: 'center', mt: { xs: 2, sm: 4 } }}>
-              <Button 
-                variant="contained" 
-                sx={{
-                  px: { xs: 3, sm: 6 },
-                  py: { xs: 1, sm: 1.5 },
-                  fontWeight: 600,
-                  borderRadius: 2,
-                  backgroundColor: 'primary.main',
-                  '&:hover': {
-                    backgroundColor: 'primary.dark'
-                  },
-                  fontSize: { xs: '0.875rem', sm: '1rem' }
-                }}
-              >
-                View more new items
-              </Button>
+              {hasMore ? (
+                <Button 
+                  variant="contained" 
+                  onClick={handleLoadMore}
+                  disabled={loading}
+                  sx={{
+                    px: { xs: 3, sm: 6 },
+                    py: { xs: 1, sm: 1.5 },
+                    fontWeight: 600,
+                    borderRadius: 2,
+                    backgroundColor: 'primary.main',
+                    '&:hover': {
+                      backgroundColor: 'primary.dark'
+                    },
+                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                  }}
+                >
+                  {loading ? 'Loading...' : 'View more new items'}
+                </Button>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  You've reached the end of the list
+                </Typography>
+              )}
             </Box>
           </motion.div>
         )}

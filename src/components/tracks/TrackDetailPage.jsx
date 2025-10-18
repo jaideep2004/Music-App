@@ -333,25 +333,13 @@ const TrackDetailPage = () => {
 											gap: { xs: 0.5, sm: 1 },
 										}}>
 										<Tooltip title='Add to favorites'>
-											{/* <IconButton
-												onClick={handleToggleFavorite}
-												sx={{
-													backgroundColor: "rgba(255, 255, 255, 0.9)",
-													color: isFavorited ? "error.main" : "text.secondary",
-													"&:hover": {
-														backgroundColor: "rgba(255, 255, 255, 1)",
-													},
-													width: { xs: 36, sm: 44 },
-													height: { xs: 36, sm: 44 },
-												}}>
-												{isFavorited ? <Favorite /> : <FavoriteBorder />}
-											</IconButton> */}
+											
 										</Tooltip>
 										<Tooltip title='Share'>
 											<IconButton
 												onClick={handleShare}
 												sx={{
-													backgroundColor: "",
+													backgroundColor: "black",
 													color: "text.secondary",
 													width: { xs: 36, sm: 44 },
 													height: { xs: 36, sm: 44 },
@@ -518,6 +506,7 @@ const TrackDetailPage = () => {
 										<Typography
 											variant='h6'
 											sx={{
+												maxWidth: "670px",
 												fontWeight: 600,
 												color: "text.primary",
 												fontSize: { xs: "1.1rem", sm: "1.2rem", md: "1.3rem" },
@@ -525,14 +514,14 @@ const TrackDetailPage = () => {
 											by {track.contributors?.[0]?.name || "Unknown Artist"}
 										</Typography>
 										<Divider orientation='vertical' flexItem sx={{ height: 20 }} />
-										<Rating value={4.5} precision={0.5} readOnly size={isMobile ? 'small' : 'medium'} />
+										{/* <Rating value={4.5} precision={0.5} readOnly size={isMobile ? 'small' : 'medium'} />
 										<Typography 
 											variant='body2' 
 											color='text.secondary'
 											sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
 										>
 											(24 reviews)
-										</Typography>
+										</Typography> */}
 									</Stack>
 
 									<Stack
@@ -630,7 +619,7 @@ const TrackDetailPage = () => {
 														color: "primary.main",
 													},
 												}}>
-												{new Date(track.publishDate).toLocaleDateString('en-GB')}
+												{new Date(track.releaseDate).toLocaleDateString('en-GB')}
 											</Typography>
 											{/* {track.releaseDate && (
 												<Typography
@@ -692,6 +681,7 @@ const TrackDetailPage = () => {
 										border: "1px solid",
 										borderColor: "divider",
 										borderRadius: 2,
+										maxWidth: "740px"
 									}}>
 									<Table>
 										<TableHead>

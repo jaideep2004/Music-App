@@ -89,8 +89,12 @@ export const authAPI = {
 // Track API functions
 export const trackAPI = {
   // Get all tracks
-  getAll: async (page = 1, limit = 10) => {
-    return apiCall(`/tracks?page=${page}&limit=${limit}`);
+  getAll: async (page = 1, limit = 10, genre = null) => {
+    let url = `/tracks?page=${page}&limit=${limit}`;
+    if (genre) {
+      url += `&genre=${encodeURIComponent(genre)}`;
+    }
+    return apiCall(url);
   },
   
   // Search tracks

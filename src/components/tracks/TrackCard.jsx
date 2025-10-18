@@ -132,6 +132,13 @@ const TrackCard = ({ track }) => {
     return 'Unknown Artist';
   };
 
+  // Helper function to limit text to 5 words
+  const truncateText = (text, maxWords = 3) => {
+    if (!text) return '';
+    const words = text.split(' ');
+    return words.length > maxWords ? words.slice(0, maxWords).join(' ') + '...' : text;
+  };
+
   return (
     <motion.div
       whileHover={{ y: -4 }}
@@ -169,7 +176,7 @@ const TrackCard = ({ track }) => {
                 transform: 'scale(1.05)'
               },
               width: '100%',
-              maxHeight: { xs: 200, sm: 180 }
+              maxHeight: { xs: 200, sm: 164 }
             }}
             onError={(e) => {
               e.target.src = '/placeholder-image.svg';
@@ -227,7 +234,7 @@ const TrackCard = ({ track }) => {
               minHeight: '2.2em'
             }}
           >
-            {track.title}
+            {truncateText(track.title)}
           </Typography>
           
           <Typography 
@@ -242,7 +249,7 @@ const TrackCard = ({ track }) => {
             }}
           >
             <Person fontSize="small" sx={{ fontSize: '0.9rem' }} />
-            {getPrimaryArtist()}
+            {truncateText(getPrimaryArtist())}
           </Typography>
           
           {/* Metadata chips */}
